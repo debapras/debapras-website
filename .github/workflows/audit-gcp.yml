@@ -1,0 +1,62 @@
+# Read-only audit of debapras-website leftovers.
+# Manual only. Does not create, start, or delete resources.
+#
+# After Teardown stop this job is expected to FAIL (debapras-website still exists).
+# After Teardown wipe + DELETE, run this before logging off.
+# Other services in the same project are listed and do not fail this audit.
+
+name: Audit GCP Resource Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: GCP project id
+        required: true
+        default: rootlink-507715
+      region:
+        description: Cloud Run and Artifact Registry region
+        required: true
+        default: asia-south1
+
+concurrency:
+  group: gcp-debapras-website
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SERVICE_NAME: debapras-website
+  AR_REPO: debapras-website
+
+jobs:
+  audit:
+    name: Verify teardown leftovers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROJECT_ID: ${{ inputs.project_id }}
+      REGION: ${{ inputs.region }}
+    steps:
+      - name: Require GCP_SA_KEY
+        env:
+          GCP_SA_PRESENT: ${{ secrets.GCP_SA_KEY != '' }}
+        run: |
+          test "${GCP_SA_PRESENT}" = "true" || { echo "Missing secret GCP_SA_KEY"; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ inputs.project_id }}
+
+      - name: Audit GCP resources
+        run: |
+          set -euo pipefail
+          chmod +x deploy/github/audit-gcp-cleanup.sh
+          ./deploy/github/audit-gcp-cleanup.sh

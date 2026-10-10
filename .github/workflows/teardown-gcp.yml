@@ -1,0 +1,107 @@
+# Stop debapras-website from serving, or delete it.
+# stop = keep the service and images, force min instances to 0.
+# wipe = delete the debapras-website Cloud Run service and its Artifact Registry repo.
+# Does not touch byteprep-java, rootlink-api, rootlink-web, or Cloud SQL.
+# Type DELETE in confirm to wipe.
+
+name: Teardown GCP
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: stop = keep the service, scale to zero; wipe = delete debapras-website Cloud Run and its images
+        type: choice
+        options:
+          - stop
+          - wipe
+        default: stop
+      confirm:
+        description: For wipe, type DELETE. For stop, leave blank or type STOP.
+        required: false
+        default: ""
+      project_id:
+        description: GCP project id
+        required: true
+        default: rootlink-507715
+      region:
+        description: Cloud Run and Artifact Registry region
+        required: true
+        default: asia-south1
+
+concurrency:
+  group: gcp-debapras-website
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SERVICE_NAME: debapras-website
+  AR_REPO: debapras-website
+
+jobs:
+  teardown:
+    name: Scale down or delete
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROJECT_ID: ${{ inputs.project_id }}
+      REGION: ${{ inputs.region }}
+    steps:
+      - name: Require GCP service account
+        env:
+          GCP_SA_PRESENT: ${{ secrets.GCP_SA_KEY != '' }}
+        run: |
+          test "${GCP_SA_PRESENT}" = "true" || { echo "Missing secret GCP_SA_KEY"; exit 1; }
+
+      - name: Guard wipe
+        run: |
+          if [ "${{ inputs.mode }}" = "wipe" ] && [ "${{ inputs.confirm }}" != "DELETE" ]; then
+            echo "Wipe requires confirm=DELETE"
+            exit 1
+          fi
+
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ inputs.project_id }}
+
+      - name: Set gcloud project
+        run: |
+          gcloud config set project "${PROJECT_ID}"
+          gcloud config set run/region "${REGION}"
+
+      - name: Scale debapras-website to zero
+        if: ${{ inputs.mode == 'stop' }}
+        run: |
+          set -euo pipefail
+          if gcloud run services describe "${SERVICE_NAME}" --region "${REGION}" >/dev/null 2>&1; then
+            gcloud run services update "${SERVICE_NAME}" \
+              --region "${REGION}" \
+              --min-instances 0 \
+              --quiet
+            gcloud run services describe "${SERVICE_NAME}" \
+              --region "${REGION}" \
+              --format="value(status.url,spec.template.metadata.annotations['autoscaling.knative.dev/minScale'])"
+            echo "Service kept. It scales to zero when idle. Images in ${AR_REPO} were not deleted."
+          else
+            echo "No Cloud Run service ${SERVICE_NAME} in ${REGION}"
+          fi
+
+      - name: Delete debapras-website Cloud Run and images
+        if: ${{ inputs.mode == 'wipe' }}
+        run: |
+          set -euo pipefail
+          gcloud run services delete "${SERVICE_NAME}" --region "${REGION}" --quiet || true
+          if gcloud artifacts repositories describe "${AR_REPO}" --location="${REGION}" >/dev/null 2>&1; then
+            gcloud artifacts repositories delete "${AR_REPO}" --location="${REGION}" --quiet
+          else
+            echo "No Artifact Registry repo ${AR_REPO}"
+          fi
+          echo "Deleted ${SERVICE_NAME} and ${AR_REPO} only."
+          echo "byteprep-java, rootlink-api, rootlink-web, and Cloud SQL were not touched."
+          echo "Redeploy with the Deploy debapras-website to GCP workflow."
