@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
 import { PrintButton } from "@/components/print-button";
@@ -10,11 +11,36 @@ export const metadata: Metadata = {
   description: `${profile.name} — ${profile.role}`,
 };
 
-export default async function ResumePage() {
+export default function ResumePage() {
+  return (
+    <Suspense fallback={<ResumeView totalTenure="7+ yr" roleDurations={{}} />}>
+      <LiveResume />
+    </Suspense>
+  );
+}
+
+async function LiveResume() {
   await connection();
   const now = new Date();
-  const totalTenure = formatTenure(careerStart, "present", now);
+  const roleDurations = Object.fromEntries(
+    roles.map((role) => [role.id, formatTenure(role.start, role.end, now)]),
+  );
 
+  return (
+    <ResumeView
+      totalTenure={formatTenure(careerStart, "present", now)}
+      roleDurations={roleDurations}
+    />
+  );
+}
+
+function ResumeView({
+  totalTenure,
+  roleDurations,
+}: {
+  totalTenure: string;
+  roleDurations: Record<string, string>;
+}) {
   return (
     <div className="min-h-full bg-[#f5f5f7] text-slate-900">
       <div className="no-print mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
@@ -71,7 +97,8 @@ export default async function ResumePage() {
                   {role.company} · {role.location}
                 </p>
                 <p className="mt-1 font-mono text-xs text-slate-500">
-                  {role.period} · {formatTenure(role.start, role.end, now)}
+                  {role.period}
+                  {roleDurations[role.id] ? ` · ${roleDurations[role.id]}` : ""}
                 </p>
                 <div className="mt-4 space-y-5">
                   {role.projects.map((project) => (
