@@ -58,7 +58,7 @@ cloud_build_submit_wait() {
         echo "Cloud Build ${id} failed status=${status}" >&2
         gcloud builds describe "${id}" --region=global --quiet \
           --format='yaml(status,statusDetail,failureInfo)' >&2 || true
-        echo "Open Cloud Build logs in the GCP console for id ${id}" >&2
+        gcloud builds log "${id}" --region=global >&2 || true
         return 1
         ;;
     esac
