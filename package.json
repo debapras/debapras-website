@@ -15,8 +15,12 @@
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
+  "overrides": {
+    "fast-glob": "$fast-glob"
+  },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "fast-glob": "file:vendor/fast-glob-safe",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

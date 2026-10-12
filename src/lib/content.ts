@@ -65,6 +65,18 @@ export const projects = [
     ],
     codeUrl: "",
     demoUrl: "",
+    snippet: {
+      language: "TypeScript",
+      caption: "Notify subscribers after a hierarchy write",
+      code: `async function saveNode(node: { id: string; parentId: string | null }) {
+  await prisma.node.upsert({
+    where: { id: node.id },
+    create: node,
+    update: { parentId: node.parentId },
+  });
+  socket.publish("tree.updated", { id: node.id, parentId: node.parentId });
+}`,
+    },
   },
   {
     id: "debaai",
@@ -88,6 +100,15 @@ export const projects = [
     ],
     codeUrl: "",
     demoUrl: "",
+    snippet: {
+      language: "TypeScript",
+      caption: "MCP tool that patches a file, then checks it in the terminal",
+      code: `server.tool("patch_file", async ({ path, diff }) => {
+  await workspace.index(vscode.workspace.workspaceFolders);
+  await workspace.applyPatch(path, diff);
+  return terminal.run("npm test");
+});`,
+    },
   },
   {
     id: "pipeline",
@@ -113,6 +134,15 @@ export const projects = [
     ],
     codeUrl: "",
     demoUrl: "",
+    snippet: {
+      language: "YAML",
+      caption: "Dump local PostgreSQL and apply it through the Cloud SQL Auth Proxy",
+      code: `- name: Sync schema and data
+  run: |
+    pg_dump --no-owner --format=custom "$LOCAL_DATABASE_URL" > dump.backup
+    cloud-sql-proxy "$INSTANCE" &
+    pg_restore --clean --no-owner --dbname "$CLOUD_SQL_URL" dump.backup`,
+    },
   },
 ] as const;
 

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t="dark";var root=document.documentElement;root.dataset.theme=t;root.classList.toggle("dark",t==="dark");}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t="dark";var root=document.documentElement;root.dataset.theme=t;root.classList.toggle("dark",t==="dark");var a=localStorage.getItem("accent");if(a!=="cyan"&&a!=="purple"&&a!=="emerald")a="cyan";root.dataset.accent=a;}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: {

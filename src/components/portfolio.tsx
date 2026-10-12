@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CheckCircle2,
@@ -14,12 +14,15 @@ import {
   Menu,
   Moon,
   Phone,
+  Search,
   Server,
   Sparkles,
   Sun,
   X,
   type LucideIcon,
 } from "lucide-react";
+import { applyAccent, accents, isAccentId, type AccentId } from "@/lib/accent";
+import { CommandPalette } from "@/components/command-palette";
 import { CompanyLogo } from "@/components/company-logo";
 import { TechMarquee } from "@/components/tech-marquee";
 import {
@@ -76,7 +79,7 @@ const headingClass = "text-zinc-900 dark:text-zinc-100";
 const secondaryClass = "text-zinc-600 dark:text-zinc-400";
 const bodyClass = "text-zinc-700 dark:text-zinc-300";
 const mutedClass = "text-zinc-600 dark:text-zinc-400";
-const accentClass = "text-cyan-600 dark:text-cyan-400";
+const accentClass = "accent-text";
 const pillClass =
   "border border-zinc-200 bg-zinc-100 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300";
 const sectionRule = "border-zinc-200/80 dark:border-zinc-800/60";
@@ -134,6 +137,8 @@ export function Portfolio({
   const [activeTab, setActiveTab] = useState<ProjectCategory>("all");
   const [selected, setSelected] = useState<Project | null>(null);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [accent, setAccent] = useState<AccentId>("cyan");
   const reduceMotion = useReducedMotion();
   const entrance = reduceMotion
     ? { initial: false as const }
@@ -146,6 +151,21 @@ export function Portfolio({
   useLayoutEffect(() => {
     const stored = localStorage.getItem("theme");
     applyTheme(stored === "light" ? "light" : "dark");
+    const storedAccent = localStorage.getItem("accent");
+    const nextAccent = isAccentId(storedAccent) ? storedAccent : "cyan";
+    setAccent(nextAccent);
+    applyAccent(nextAccent);
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
@@ -175,11 +195,16 @@ export function Portfolio({
     applyTheme(next);
   }
 
+  function chooseAccent(next: AccentId) {
+    setAccent(next);
+    applyAccent(next);
+  }
+
   return (
     <div className="min-h-screen overflow-x-clip bg-[#f5f5f7] text-zinc-900 transition-colors duration-300 dark:bg-[#0b0c10] dark:text-zinc-100">
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-cyan-500 focus:px-3 focus:py-2 focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:px-3 focus:py-2 focus:text-white accent-fill"
       >
         Skip to content
       </a>
@@ -197,7 +222,7 @@ export function Portfolio({
               href="#top"
               className="flex items-center gap-2 text-sm font-medium tracking-tight md:text-base"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 font-mono text-sm text-white shadow-lg shadow-cyan-500/20">
+              <span className="accent-mark flex h-8 w-8 items-center justify-center rounded-full font-mono text-sm">
                 D
               </span>
               {profile.shortName}
@@ -225,6 +250,19 @@ export function Portfolio({
           </nav>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-keyshortcuts="Control+K Meta+K"
+              aria-label="Open command palette"
+              className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <kbd className="hidden font-mono text-[10px] text-zinc-500 lg:inline">Ctrl K</kbd>
+            </button>
+            <div className="hidden sm:block">
+              <AccentPicker value={accent} onChange={chooseAccent} />
+            </div>
             <button
               type="button"
               onClick={() => setResumeOpen(true)}
@@ -261,6 +299,20 @@ export function Portfolio({
             className="border-t border-zinc-200 bg-[#f5f5f7] px-6 py-3 shadow-lg md:hidden dark:border-zinc-800 dark:bg-[#0b0c10]"
           >
             <StatusPill className="my-2 flex w-fit" />
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">Accent</span>
+              <AccentPicker value={accent} onChange={chooseAccent} />
+            </div>
+            <button
+              type="button"
+              className="block w-full py-3 text-left text-base text-zinc-700 dark:text-zinc-300"
+              onClick={() => {
+                setMenuOpen(false);
+                setPaletteOpen(true);
+              }}
+            >
+              Search
+            </button>
             {navigation.map((item) => (
               <a
                 key={item.href}
@@ -281,7 +333,7 @@ export function Portfolio({
           className="relative isolate mx-auto flex max-w-6xl flex-col items-center overflow-hidden px-6 pt-36 pb-16 text-center md:pt-48 md:pb-24"
         >
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden dark:opacity-40" aria-hidden>
-            <div className="hero-beam-center absolute -top-40 left-1/2 h-72 w-[32rem] rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-300" />
+            <div className="accent-beam hero-beam-center absolute -top-40 left-1/2 h-72 w-[32rem] rounded-full blur-3xl" />
             <div className="hero-beam-alt absolute -top-8 -left-24 h-56 w-56 rounded-full bg-indigo-300/15 blur-3xl dark:bg-indigo-400" />
             <div className="hero-beam absolute -top-16 -right-24 h-56 w-72 rounded-full bg-blue-300/15 blur-3xl dark:bg-blue-400" />
           </div>
@@ -291,13 +343,13 @@ export function Portfolio({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-600/30 bg-cyan-500/10 px-3.5 py-1.5 font-mono text-xs font-medium tracking-wide text-cyan-700 shadow-sm shadow-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-400">
+          <div className="accent-chip mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-xs font-medium tracking-wide">
             <Sparkles className="h-3.5 w-3.5" />
             {profile.role} · {profile.company}
           </div>
           <h1 className="mb-8 max-w-4xl text-4xl leading-[1.08] font-bold tracking-tight text-zinc-900 sm:text-6xl md:text-7xl dark:text-zinc-100">
             Enterprise systems,{" "}
-            <span className="bg-gradient-to-r from-cyan-700 via-blue-600 to-indigo-700 bg-clip-text text-transparent dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-400">
+            <span className="accent-gradient">
               {totalTenure}
             </span>{" "}
             in the making.
@@ -308,7 +360,7 @@ export function Portfolio({
           <div className="flex flex-wrap items-center justify-center gap-4">
             <a
               href="#projects"
-              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25"
+              className="accent-fill group flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold"
             >
               Explore Work
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -446,7 +498,7 @@ export function Portfolio({
                   variants={rise}
                   onMouseMove={trackSpotlight}
                   onClick={() => setSelected(project)}
-                  className={`spotlight ${cardClass} group flex cursor-pointer flex-col justify-between rounded-3xl p-7 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/40 hover:shadow-xl dark:hover:border-cyan-500/40 dark:hover:shadow-cyan-500/10`}
+                  className={`spotlight ${cardClass} group flex cursor-pointer flex-col justify-between rounded-3xl p-7 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-[var(--accent-line)] hover:shadow-xl`}
                 >
                   <span>
                     <span className="mb-6 flex items-center justify-between">
@@ -459,7 +511,7 @@ export function Portfolio({
                         {project.category}
                       </span>
                     </span>
-                    <span className={`mb-2 block text-xl font-bold tracking-tight transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400 ${headingClass}`}>
+                    <span className={`mb-2 block text-xl font-bold tracking-tight transition-colors group-hover:text-[var(--accent-text)] ${headingClass}`}>
                       {project.title}
                     </span>
                     <span className={`mb-4 block text-xs font-medium ${secondaryClass}`}>
@@ -632,7 +684,7 @@ export function Portfolio({
             <a
               href={`mailto:${profile.email}`}
               title="Email"
-              className="rounded-full border border-cyan-400 bg-cyan-500 p-3 text-white shadow-lg shadow-cyan-500/20"
+              className="accent-fill rounded-full border border-transparent p-3"
             >
               <Mail className="h-5 w-5" />
             </a>
@@ -670,7 +722,7 @@ export function Portfolio({
       </footer>
 
       {selected ? (
-        <ProjectDialog project={selected} onClose={() => setSelected(null)} />
+        <ProjectDialog key={selected.id} project={selected} onClose={() => setSelected(null)} />
       ) : null}
       {resumeOpen ? (
         <ResumeDialog
@@ -679,6 +731,11 @@ export function Portfolio({
           onClose={() => setResumeOpen(false)}
         />
       ) : null}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onToggleTheme={toggleTheme}
+      />
     </div>
   );
 }
@@ -693,6 +750,62 @@ function hasLink(url: string) {
   return url.startsWith("http");
 }
 
+function AccentPicker({
+  value,
+  onChange,
+  className = "",
+}: {
+  value: AccentId;
+  onChange: (accent: AccentId) => void;
+  className?: string;
+}) {
+  return (
+    <div role="radiogroup" aria-label="Accent color" className={`flex items-center gap-1.5 ${className}`}>
+      {accents.map((item) => {
+        const selected = value === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={`${item.label} accent`}
+            onClick={() => onChange(item.id)}
+            className={`h-4 w-4 rounded-full ring-offset-2 ring-offset-[#f5f5f7] dark:ring-offset-[#0b0c10] ${
+              selected ? "ring-2 ring-zinc-900 dark:ring-white" : "ring-1 ring-zinc-300 dark:ring-zinc-600"
+            }`}
+            style={{ backgroundColor: item.swatch }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+const projectTabs = [
+  { id: "overview", label: "Overview" },
+  { id: "architecture", label: "Architecture" },
+  { id: "code", label: "Code snippet" },
+] as const;
+
+type ProjectTab = (typeof projectTabs)[number]["id"];
+
+function moveProjectTab(
+  event: ReactKeyboardEvent<HTMLButtonElement>,
+  current: ProjectTab,
+  setTab: (tab: ProjectTab) => void,
+) {
+  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+  event.preventDefault();
+  const index = projectTabs.findIndex((item) => item.id === current);
+  const next =
+    event.key === "ArrowRight"
+      ? projectTabs[(index + 1) % projectTabs.length]
+      : projectTabs[(index - 1 + projectTabs.length) % projectTabs.length];
+  setTab(next.id);
+  document.getElementById(`project-tab-${next.id}`)?.focus();
+}
+
 function ProjectDialog({
   project,
   onClose,
@@ -703,6 +816,7 @@ function ProjectDialog({
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [tab, setTab] = useState<ProjectTab>("overview");
 
   useDialogBehavior(dialogRef, closeRef, onClose);
 
@@ -741,23 +855,34 @@ function ProjectDialog({
         <p className={`mt-2 mb-6 text-sm font-medium ${accentClass}`}>
           {project.tagline}
         </p>
-        <div className="space-y-6 text-xs md:text-sm">
-          <div>
-            <h3 className={`mb-2 font-mono text-[11px] font-semibold tracking-wider uppercase ${mutedClass}`}>
-              Overview
-            </h3>
+        <div role="tablist" aria-label="Project details" className="mb-6 flex gap-1 rounded-full bg-zinc-100 p-1 dark:bg-zinc-800">
+          {projectTabs.map((item) => {
+            const selectedTab = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                id={`project-tab-${item.id}`}
+                type="button"
+                role="tab"
+                aria-selected={selectedTab}
+                aria-controls={`project-panel-${item.id}`}
+                tabIndex={selectedTab ? 0 : -1}
+                onClick={() => setTab(item.id)}
+                onKeyDown={(event) => moveProjectTab(event, item.id, setTab)}
+                className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold ${
+                  selectedTab
+                    ? "accent-fill"
+                    : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+        {tab === "overview" ? (
+          <div id="project-panel-overview" role="tabpanel" aria-labelledby="project-tab-overview" className="space-y-6 text-xs md:text-sm">
             <p className={`leading-relaxed ${bodyClass}`}>{project.description}</p>
-          </div>
-          <div>
-            <h3 className={`mb-2 font-mono text-[11px] font-semibold tracking-wider uppercase ${mutedClass}`}>
-              System architecture
-            </h3>
-            <p className={`leading-relaxed ${bodyClass}`}>{project.architecture}</p>
-          </div>
-          <div>
-            <h3 className={`mb-2 font-mono text-[11px] font-semibold tracking-wider uppercase ${mutedClass}`}>
-              What it includes
-            </h3>
             <ul className="space-y-2">
               {project.highlights.map((item) => (
                 <li key={item} className={`flex items-start gap-3 ${bodyClass}`}>
@@ -766,46 +891,56 @@ function ProjectDialog({
                 </li>
               ))}
             </ul>
+            {hasLink(project.codeUrl) || hasLink(project.demoUrl) ? (
+              <div className="flex flex-wrap gap-3">
+                {hasLink(project.codeUrl) ? (
+                  <a
+                    href={project.codeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-2.5 text-xs font-semibold text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+                  >
+                    <GithubIcon className="h-4 w-4" />
+                    GitHub
+                  </a>
+                ) : null}
+                {hasLink(project.demoUrl) ? (
+                  <a
+                    href={project.demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="accent-fill rounded-full px-5 py-2.5 text-xs font-semibold"
+                  >
+                    Live demo
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
           </div>
-          <div>
-            <h3 className={`mb-2 font-mono text-[11px] font-semibold tracking-wider uppercase ${mutedClass}`}>
-              Technologies
-            </h3>
+        ) : null}
+        {tab === "architecture" ? (
+          <div id="project-panel-architecture" role="tabpanel" aria-labelledby="project-tab-architecture" className="space-y-6 text-xs md:text-sm">
+            <p className={`leading-relaxed ${bodyClass}`}>{project.architecture}</p>
             <ul className="flex flex-wrap gap-1.5">
               {project.stack.map((tech) => (
-                <li
-                  key={tech}
-                  className={`rounded-lg px-2.5 py-1 font-mono text-xs ${pillClass}`}
-                >
+                <li key={tech} className={`rounded-lg px-2.5 py-1 font-mono text-xs ${pillClass}`}>
                   {tech}
                 </li>
               ))}
             </ul>
           </div>
-        </div>
-        {hasLink(project.codeUrl) || hasLink(project.demoUrl) ? (
-          <div className={`mt-8 flex items-center justify-end gap-3 border-t pt-6 ${sectionRule}`}>
-            {hasLink(project.codeUrl) ? (
-              <a
-                href={project.codeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-2.5 text-xs font-semibold text-zinc-900 transition-colors duration-300 dark:border-zinc-700 dark:text-zinc-100"
-              >
-                <GithubIcon className="h-4 w-4" />
-                Source code
-              </a>
-            ) : null}
-            {hasLink(project.demoUrl) ? (
-              <a
-                href={project.demoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-cyan-500 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-cyan-500/20"
-              >
-                Live demo
-              </a>
-            ) : null}
+        ) : null}
+        {tab === "code" ? (
+          <div id="project-panel-code" role="tabpanel" aria-labelledby="project-tab-code">
+            <p className={`mb-3 text-xs ${mutedClass}`}>
+              {project.snippet.caption}
+            </p>
+            <pre className="overflow-x-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100">
+              <code>{project.snippet.code}</code>
+            </pre>
+            <p className={`mt-3 font-mono text-[10px] tracking-wide uppercase ${mutedClass}`}>
+              {project.snippet.language}
+            </p>
           </div>
         ) : null}
       </div>
@@ -864,7 +999,7 @@ function ResumeDialog({
             <a
               href={profile.resumePdfHref}
               download="Debaprasad-Sahoo-Resume.pdf"
-              className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-300 hover:bg-cyan-500"
+              className="accent-fill inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
             >
               <Download className="h-4 w-4" />
               Download PDF
