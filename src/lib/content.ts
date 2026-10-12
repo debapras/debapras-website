@@ -1,7 +1,6 @@
 /**
  * Profile and project copy taken from Debaprasad Sahoo's resume,
  * plus the personal products already on the site.
- * Replace github and linkedin before sharing.
  */
 
 import type { YearMonth } from "@/lib/tenure";
@@ -16,7 +15,7 @@ export const profile = {
   phone: "+91 7978355991",
   phoneHref: "tel:+917978355991",
   github: "https://github.com/debapras",
-  linkedin: "https://www.linkedin.com/in/REPLACE_WITH_USERNAME",
+  linkedin: "https://www.linkedin.com/in/debaprasad-sahoo-95a3b4221/",
   resumeHref: "/Debaprasad-Sahoo-Resume.docx",
   resumePdfHref: "/Debaprasad-Sahoo-Resume.pdf",
   location: "Pune, Maharashtra",
@@ -162,6 +161,7 @@ export const roles = [
   {
     id: "amdocs",
     company: "Amdocs",
+    logo: { src: "/brands/amdocs.jpg", fit: "badge" as const },
     title: "Software Engineering Team Lead",
     location: "Pune, Maharashtra",
     start: { year: 2021, month: 5 } satisfies YearMonth,
@@ -203,6 +203,7 @@ export const roles = [
   {
     id: "yusata",
     company: "Yusata Infotech Pvt Ltd",
+    logo: { src: "/brands/yusata.png", fit: "wordmark" as const },
     title: "Java Developer",
     location: "Jaipur, Rajasthan",
     start: { year: 2019, month: 8 } satisfies YearMonth,

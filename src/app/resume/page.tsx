@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
+import { CompanyLogo } from "@/components/company-logo";
 import { PrintButton } from "@/components/print-button";
 import { profile, projects, roles, skillGroups } from "@/lib/content";
 import { careerStart, formatTenure } from "@/lib/tenure";
@@ -89,7 +90,9 @@ function ResumeView({
           </h2>
           <ul className="mt-6 space-y-10">
             {roles.map((role) => (
-              <li key={role.id}>
+              <li key={role.id} className="flex items-start gap-4">
+                <CompanyLogo logo={role.logo} />
+                <div className="min-w-0">
                 <h3 className="text-2xl font-semibold tracking-tight">
                   {role.title}
                 </h3>
@@ -112,6 +115,7 @@ function ResumeView({
                       </ul>
                     </div>
                   ))}
+                </div>
                 </div>
               </li>
             ))}

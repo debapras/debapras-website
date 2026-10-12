@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   CheckCircle2,
   ChevronRight,
@@ -19,6 +20,8 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { CompanyLogo } from "@/components/company-logo";
+import { TechMarquee } from "@/components/tech-marquee";
 import {
   navigation,
   profile,
@@ -78,6 +81,40 @@ const pillClass =
   "border border-zinc-200 bg-zinc-100 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300";
 const sectionRule = "border-zinc-200/80 dark:border-zinc-800/60";
 
+const rise = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+  },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+function trackSpotlight(event: MouseEvent<HTMLElement>) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  event.currentTarget.style.setProperty("--spot-x", `${event.clientX - rect.left}px`);
+  event.currentTarget.style.setProperty("--spot-y", `${event.clientY - rect.top}px`);
+}
+
+function StatusPill({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`items-center gap-2 rounded-full border border-emerald-600/25 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300 ${className}`}
+    >
+      <span className="relative flex h-2 w-2" aria-hidden>
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+      </span>
+      Building AI Systems & Full-Stack Apps
+    </div>
+  );
+}
+
 function applyTheme(theme: "light" | "dark") {
   const root = document.documentElement;
   root.dataset.theme = theme;
@@ -97,6 +134,14 @@ export function Portfolio({
   const [activeTab, setActiveTab] = useState<ProjectCategory>("all");
   const [selected, setSelected] = useState<Project | null>(null);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const entrance = reduceMotion
+    ? { initial: false as const }
+    : {
+        initial: "hidden" as const,
+        whileInView: "show" as const,
+        viewport: { once: true, margin: "-40px" },
+      };
 
   useLayoutEffect(() => {
     const stored = localStorage.getItem("theme");
@@ -131,7 +176,7 @@ export function Portfolio({
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-zinc-900 transition-colors duration-300 dark:bg-[#0b0c10] dark:text-zinc-100">
+    <div className="min-h-screen overflow-x-clip bg-[#f5f5f7] text-zinc-900 transition-colors duration-300 dark:bg-[#0b0c10] dark:text-zinc-100">
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-cyan-500 focus:px-3 focus:py-2 focus:text-white"
@@ -147,15 +192,25 @@ export function Portfolio({
         }`}
       >
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-          <a
-            href="#top"
-            className="flex items-center gap-2 text-sm font-medium tracking-tight md:text-base"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 font-mono text-sm text-white shadow-lg shadow-cyan-500/20">
-              D
+          <div className="flex min-w-0 items-center gap-3">
+            <a
+              href="#top"
+              className="flex items-center gap-2 text-sm font-medium tracking-tight md:text-base"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 font-mono text-sm text-white shadow-lg shadow-cyan-500/20">
+                D
+              </span>
+              {profile.shortName}
+            </a>
+            <span
+              className="relative flex h-2 w-2 lg:hidden"
+              aria-label="Building AI Systems & Full-Stack Apps"
+            >
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
             </span>
-            {profile.shortName}
-          </a>
+            <StatusPill className="hidden lg:flex" />
+          </div>
 
           <nav className="hidden items-center gap-8 text-sm font-medium md:flex" aria-label="Sections">
             {navigation.map((item) => (
@@ -205,6 +260,7 @@ export function Portfolio({
             aria-label="Sections"
             className="border-t border-zinc-200 bg-[#f5f5f7] px-6 py-3 shadow-lg md:hidden dark:border-zinc-800 dark:bg-[#0b0c10]"
           >
+            <StatusPill className="my-2 flex w-fit" />
             {navigation.map((item) => (
               <a
                 key={item.href}
@@ -222,12 +278,19 @@ export function Portfolio({
       <main id="content">
         <section
           id="top"
-          className="relative mx-auto flex max-w-6xl flex-col items-center overflow-hidden px-6 pt-36 pb-20 text-center md:pt-48 md:pb-32"
+          className="relative isolate mx-auto flex max-w-6xl flex-col items-center overflow-hidden px-6 pt-36 pb-16 text-center md:pt-48 md:pb-24"
         >
-          <div
-            className="pointer-events-none absolute top-1/4 left-1/2 -z-10 h-[300px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-tr from-cyan-500/20 via-blue-500/15 to-purple-500/10 blur-[120px]"
-            aria-hidden
-          />
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden dark:opacity-40" aria-hidden>
+            <div className="hero-beam-center absolute -top-40 left-1/2 h-72 w-[32rem] rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-300" />
+            <div className="hero-beam-alt absolute -top-8 -left-24 h-56 w-56 rounded-full bg-indigo-300/15 blur-3xl dark:bg-indigo-400" />
+            <div className="hero-beam absolute -top-16 -right-24 h-56 w-72 rounded-full bg-blue-300/15 blur-3xl dark:bg-blue-400" />
+          </div>
+          <motion.div
+            className="flex flex-col items-center"
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-600/30 bg-cyan-500/10 px-3.5 py-1.5 font-mono text-xs font-medium tracking-wide text-cyan-700 shadow-sm shadow-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-400">
             <Sparkles className="h-3.5 w-3.5" />
             {profile.role} · {profile.company}
@@ -260,7 +323,10 @@ export function Portfolio({
               GitHub Profile
             </a>
           </div>
+          </motion.div>
         </section>
+
+        <TechMarquee />
 
         <section id="experience" className={`mx-auto max-w-6xl border-t px-6 py-24 ${sectionRule}`}>
           <div className="mb-12">
@@ -271,13 +337,21 @@ export function Portfolio({
               {totalTenure} across product engineering.
             </p>
           </div>
-          <ol className="space-y-8">
+          <motion.ol
+            className="space-y-8"
+            {...entrance}
+            variants={stagger}
+          >
             {roles.map((role) => (
-              <li
+              <motion.li
                 key={role.id}
-                className={`${cardClass} rounded-3xl p-7 md:p-8`}
+                variants={rise}
+                onMouseMove={trackSpotlight}
+                className={`spotlight ${cardClass} rounded-3xl p-7 md:p-8`}
               >
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div className="flex items-start gap-4">
+                  <CompanyLogo logo={role.logo} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-end md:justify-between">
                   <div>
                     <p className={`font-mono text-xs tracking-wide uppercase ${accentClass}`}>
                       {role.company}
@@ -293,6 +367,7 @@ export function Portfolio({
                     {role.period}
                     {roleDurations[role.id] ? ` · ${roleDurations[role.id]}` : ""}
                   </p>
+                  </div>
                 </div>
                 <div className="mt-8 space-y-8">
                   {role.projects.map((project) => (
@@ -317,9 +392,9 @@ export function Portfolio({
                     </div>
                   ))}
                 </div>
-              </li>
+              </motion.li>
             ))}
-          </ol>
+          </motion.ol>
         </section>
 
         <section id="projects" className={`mx-auto max-w-6xl border-t px-6 py-24 ${sectionRule}`}>
@@ -356,15 +431,22 @@ export function Portfolio({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          <motion.div
+            key={activeTab}
+            className="grid grid-cols-1 gap-8 md:grid-cols-3"
+            {...entrance}
+            variants={stagger}
+          >
             {visibleProjects.map((project) => {
               const Icon = projectIcons[project.id];
               return (
-                <button
+                <motion.button
                   key={project.id}
                   type="button"
+                  variants={rise}
+                  onMouseMove={trackSpotlight}
                   onClick={() => setSelected(project)}
-                  className={`${cardClass} group flex cursor-pointer flex-col justify-between rounded-3xl p-7 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/40 hover:shadow-xl dark:hover:border-cyan-500/40 dark:hover:shadow-cyan-500/10`}
+                  className={`spotlight ${cardClass} group flex cursor-pointer flex-col justify-between rounded-3xl p-7 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/40 hover:shadow-xl dark:hover:border-cyan-500/40 dark:hover:shadow-cyan-500/10`}
                 >
                   <span>
                     <span className="mb-6 flex items-center justify-between">
@@ -408,10 +490,10 @@ export function Portfolio({
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
                   </span>
-                </button>
+                </motion.button>
               );
             })}
-          </div>
+          </motion.div>
         </section>
 
         <section id="skills" className={`mx-auto max-w-6xl border-t px-6 py-24 ${sectionRule}`}>
@@ -423,12 +505,17 @@ export function Portfolio({
               Technical stack and engineering architecture
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <motion.div
+            className="grid grid-cols-1 gap-6 md:grid-cols-2"
+            {...entrance}
+            variants={stagger}
+          >
             {skillGroups.map((group) => {
               const Icon = skillIcons[group.title] ?? Sparkles;
               return (
-                <div
+                <motion.div
                   key={group.title}
+                  variants={rise}
                   className={`${cardClass} rounded-3xl p-8`}
                 >
                   <div className="mb-6 flex items-center gap-3">
@@ -447,14 +534,18 @@ export function Portfolio({
                       </li>
                     ))}
                   </ul>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </section>
 
         <section id="about" className={`mx-auto max-w-6xl border-t px-6 py-24 ${sectionRule}`}>
-          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-12">
+          <motion.div
+            className="grid grid-cols-1 items-center gap-12 md:grid-cols-12"
+            {...entrance}
+            variants={rise}
+          >
             <div className="md:col-span-7">
               <h2 className={`mb-2 font-mono text-xs font-semibold tracking-widest uppercase ${accentClass}`}>
                 Background
@@ -516,7 +607,7 @@ export function Portfolio({
                 </dl>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
       </main>
 
@@ -524,7 +615,11 @@ export function Portfolio({
         id="contact"
         className={`border-t bg-zinc-200/70 px-6 py-16 text-zinc-900 transition-colors duration-300 dark:bg-black dark:text-zinc-100 ${sectionRule}`}
       >
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 md:flex-row">
+        <motion.div
+          className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 md:flex-row"
+          {...entrance}
+          variants={rise}
+        >
           <div>
             <h2 className={`mb-2 text-2xl font-bold tracking-tight ${headingClass}`}>
               Let&apos;s build something exceptional.
@@ -567,7 +662,7 @@ export function Portfolio({
               <LinkedinIcon className="h-5 w-5" />
             </a>
           </div>
-        </div>
+        </motion.div>
         <div className={`mx-auto mt-12 flex max-w-6xl flex-col items-center justify-between gap-2 border-t pt-8 text-[11px] sm:flex-row ${mutedClass} ${sectionRule}`}>
           <p>© 2026 {profile.name}</p>
           <p className="font-mono">Next.js on Google Cloud Run</p>
@@ -801,6 +896,9 @@ function ResumeDialog({
                   key={role.id}
                   className="rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-zinc-800 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
                 >
+                  <div className="flex items-start gap-3">
+                    <CompanyLogo logo={role.logo} size="sm" />
+                    <div className="min-w-0">
                   <h4 className={`text-sm font-bold ${headingClass}`}>
                     {role.title}, {role.company}
                   </h4>
@@ -817,6 +915,8 @@ function ResumeDialog({
                       </li>
                     ))}
                   </ul>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
