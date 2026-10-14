@@ -19,7 +19,7 @@ export const profile = {
   resumeHref: "/Debaprasad-Sahoo-Resume.docx",
   resumePdfHref: "/Debaprasad-Sahoo-Resume.pdf",
   location: "Pune, Maharashtra",
-  company: "Amdocs",
+  company: "Amdocs Development Centre India LLP",
   certification: "AWS Certified Cloud Practitioner",
 } as const;
 
@@ -185,12 +185,53 @@ export const skillGroups = [
       "VS Code Extension API",
     ],
   },
+  {
+    title: "Data Engineering & Analytics",
+    items: ["MS Power BI", "ETL Pipelines", "SQL", "Oracle Database"],
+  },
 ] as const;
+
+export type SkillName = (typeof skillGroups)[number]["items"][number];
+
+export const skillLinks: Record<SkillName, string> = {
+  "Java 8 & 17": "https://dev.java/",
+  "Node.js": "https://nodejs.org/",
+  SQL: "https://www.postgresql.org/",
+  Python: "https://www.python.org/",
+  "Spring Boot": "https://spring.io/projects/spring-boot",
+  JPA: "https://jakarta.ee/specifications/persistence/",
+  Hibernate: "https://hibernate.org/",
+  Camunda: "https://camunda.com/",
+  Kestra: "https://kestra.io/",
+  PostgreSQL: "https://www.postgresql.org/",
+  "Oracle Database": "https://www.oracle.com/database/",
+  Valkey: "https://valkey.io/",
+  "Apache Kafka": "https://kafka.apache.org/",
+  "REST APIs": "https://developer.mozilla.org/en-US/docs/Glossary/REST",
+  Docker: "https://www.docker.com/",
+  Kubernetes: "https://kubernetes.io/",
+  Helm: "https://helm.sh/",
+  "GitLab CI/CD": "https://docs.gitlab.com/ee/ci/",
+  Jenkins: "https://www.jenkins.io/",
+  Liquibase: "https://www.liquibase.com/",
+  Twistlock: "https://www.paloaltonetworks.com/prisma/cloud",
+  Checkmarx: "https://checkmarx.com/",
+  "Black Duck": "https://www.blackduck.com/",
+  "Next.js": "https://nextjs.org/",
+  React: "https://react.dev/",
+  TypeScript: "https://www.typescriptlang.org/",
+  "Tailwind CSS": "https://tailwindcss.com/",
+  Prisma: "https://www.prisma.io/",
+  "Model Context Protocol": "https://modelcontextprotocol.io/",
+  "VS Code Extension API": "https://code.visualstudio.com/api",
+  "MS Power BI": "https://powerbi.microsoft.com/",
+  "ETL Pipelines": "https://en.wikipedia.org/wiki/Extract,_transform,_load",
+};
 
 export const roles = [
   {
     id: "amdocs",
-    company: "Amdocs",
+    company: "Amdocs Development Centre India LLP",
     logo: { src: "/brands/amdocs.jpg", fit: "badge" as const },
     title: "Software Engineering Team Lead",
     location: "Pune, Maharashtra",

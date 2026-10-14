@@ -324,7 +324,11 @@ body {
 .spotlight:hover::before,
 .spotlight:hover::after,
 .spotlight:focus-visible::before,
-.spotlight:focus-visible::after {
+.spotlight:focus-visible::after,
+.group:hover > .spotlight::before,
+.group:hover > .spotlight::after,
+.group:focus-visible > .spotlight::before,
+.group:focus-visible > .spotlight::after {
   opacity: 1;
 }
 
@@ -443,7 +447,11 @@ body {
 .spotlight:hover::before,
 .spotlight:hover::after,
 .spotlight:focus-visible::before,
-.spotlight:focus-visible::after {
+.spotlight:focus-visible::after,
+.group:hover > .spotlight::before,
+.group:hover > .spotlight::after,
+.group:focus-visible > .spotlight::before,
+.group:focus-visible > .spotlight::after {
   opacity: 1;
 }
 

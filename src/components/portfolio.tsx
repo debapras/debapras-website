@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  BarChart3,
   CheckCircle2,
   ChevronRight,
   Cpu,
@@ -10,6 +11,7 @@ import {
   FileText,
   Layers,
   LayoutGrid,
+  Copy,
   Mail,
   Menu,
   Moon,
@@ -24,6 +26,7 @@ import {
 import { applyAccent, accents, isAccentId, type AccentId } from "@/lib/accent";
 import { CommandPalette } from "@/components/command-palette";
 import { CompanyLogo } from "@/components/company-logo";
+import { TechIcon } from "@/components/tech-icon";
 import { TechMarquee } from "@/components/tech-marquee";
 import {
   navigation,
@@ -32,6 +35,7 @@ import {
   projects,
   roles,
   skillGroups,
+  skillLinks,
   type Project,
   type ProjectCategory,
 } from "@/lib/content";
@@ -52,6 +56,172 @@ function LinkedinIcon({ className }: { className?: string }) {
   );
 }
 
+function copyWithSelection(value: string) {
+  const area = document.createElement("textarea");
+  area.value = value;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.top = "0";
+  area.style.left = "0";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.focus();
+  area.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(area);
+  return copied;
+}
+
+function ContactAction({
+  label,
+  value,
+  copyLabel,
+  openLabel,
+  href,
+  toastMessage,
+  icon: Icon,
+  buttonClassName,
+  open,
+  onOpenChange,
+  onCopied,
+}: {
+  label: string;
+  value: string;
+  copyLabel: string;
+  openLabel: string;
+  href: string;
+  toastMessage: string;
+  icon: LucideIcon;
+  buttonClassName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCopied: (message: string) => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const copyRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const onOpenChangeRef = useRef(onOpenChange);
+  const [copied, setCopied] = useState(false);
+  const [place, setPlace] = useState({ left: 12, bottom: 12, width: 256 });
+  const menuId = useId();
+
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    function placeMenu() {
+      const button = buttonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const width = Math.min(256, window.innerWidth - 24);
+      const left = Math.max(12, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12));
+      setPlace({ left, bottom: window.innerHeight - rect.top + 8, width });
+    }
+    placeMenu();
+    window.addEventListener("resize", placeMenu);
+    window.addEventListener("scroll", placeMenu, true);
+    return () => {
+      window.removeEventListener("resize", placeMenu);
+      window.removeEventListener("scroll", placeMenu, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: PointerEvent) {
+      const target = event.target as Node;
+      if (buttonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      onOpenChangeRef.current(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      onOpenChangeRef.current(false);
+      buttonRef.current?.focus();
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    copyRef.current?.focus();
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function markCopied() {
+    setCopied(true);
+    onCopied(toastMessage);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copy() {
+    let copiedNow = false;
+    try {
+      copiedNow = copyWithSelection(value);
+    } catch {
+      copiedNow = false;
+    }
+    if (copiedNow) {
+      markCopied();
+      return;
+    }
+    if (!navigator.clipboard?.writeText) {
+      onCopied("Could not copy. Try again.");
+      return;
+    }
+    navigator.clipboard.writeText(value).then(markCopied).catch(() => {
+      onCopied("Could not copy. Try again.");
+    });
+  }
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        title={label}
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => onOpenChange(!open)}
+        className={buttonClassName}
+      >
+        <Icon className="h-5 w-5" />
+      </button>
+      {open ? (
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="dialog"
+          aria-label={`${label} actions`}
+          style={{ left: place.left, bottom: place.bottom, width: place.width }}
+          className="fixed z-50 flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white/95 p-3 text-zinc-900 shadow-xl backdrop-blur-md dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-100"
+        >
+          <div className="break-all px-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">{value}</div>
+          <button
+            ref={copyRef}
+            type="button"
+            onClick={copy}
+            className="flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 text-left text-xs font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+          >
+            <Copy className="h-3.5 w-3.5 accent-text" />
+            {copied ? "Copied!" : copyLabel}
+          </button>
+          <a
+            href={href}
+            onClick={() => onOpenChange(false)}
+            className="accent-fill flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-white"
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {openLabel}
+          </a>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const projectIcons: Record<Project["id"], LucideIcon> = {
   rootlink: Layers,
   debaai: Cpu,
@@ -64,6 +234,7 @@ const skillIcons: Record<string, LucideIcon> = {
   "Data & messaging": Server,
   "DevOps, cloud & security": Cpu,
   "Personal product work": LayoutGrid,
+  "Data Engineering & Analytics": BarChart3,
 };
 
 const categoryTone: Record<Project["category"], string> = {
@@ -75,6 +246,10 @@ const categoryTone: Record<Project["category"], string> = {
 
 const cardClass =
   "border border-zinc-200/80 bg-white/90 text-zinc-900 shadow-sm backdrop-blur-md transition-colors duration-300 dark:border-zinc-800/80 dark:bg-[#16181d] dark:text-zinc-100 dark:shadow-none";
+// The hover target (an outer `group`) never moves; only this inner surface lifts,
+// so the cursor cannot slip off the card edge mid-transition and cause flicker.
+const liftCardClass =
+  "spotlight h-full rounded-3xl border border-zinc-200/80 bg-white/90 text-zinc-900 shadow-sm backdrop-blur-md transform-gpu transition-[translate,box-shadow,border-color,background-color] duration-300 ease-out will-change-[translate] group-hover:-translate-y-1 group-hover:border-[var(--accent-line)] group-hover:shadow-[0_0_25px_var(--accent-glow)] group-focus-visible:-translate-y-1 group-focus-visible:border-[var(--accent-line)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 dark:border-zinc-800/80 dark:bg-[#16181d] dark:text-zinc-100 dark:shadow-none dark:group-hover:shadow-[0_0_25px_var(--accent-glow)]";
 const headingClass = "text-zinc-900 dark:text-zinc-100";
 const secondaryClass = "text-zinc-600 dark:text-zinc-400";
 const bodyClass = "text-zinc-700 dark:text-zinc-300";
@@ -83,6 +258,7 @@ const accentClass = "accent-text";
 const pillClass =
   "border border-zinc-200 bg-zinc-100 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300";
 const sectionRule = "border-zinc-200/80 dark:border-zinc-800/60";
+const currentEmployer = roles.find((role) => role.id === "amdocs") ?? roles[0];
 
 const rise = {
   hidden: { opacity: 0, y: 20 },
@@ -139,6 +315,21 @@ export function Portfolio({
   const [resumeOpen, setResumeOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [accent, setAccent] = useState<AccentId>("cyan");
+  const [activeContact, setActiveContact] = useState<"email" | "phone" | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
   const reduceMotion = useReducedMotion();
   const entrance = reduceMotion
     ? { initial: false as const }
@@ -237,7 +428,7 @@ export function Portfolio({
             <StatusPill className="hidden lg:flex" />
           </div>
 
-          <nav className="hidden items-center gap-8 text-sm font-medium md:flex" aria-label="Sections">
+          <nav className="hidden items-center gap-8 text-sm font-medium lg:flex" aria-label="Sections">
             {navigation.map((item) => (
               <a
                 key={item.href}
@@ -282,7 +473,7 @@ export function Portfolio({
             </button>
             <button
               type="button"
-              className="rounded-full p-2 text-zinc-900 transition-colors duration-300 hover:bg-zinc-200 md:hidden dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className="rounded-full p-2 text-zinc-900 transition-colors duration-300 hover:bg-zinc-200 lg:hidden dark:text-zinc-100 dark:hover:bg-zinc-800"
               aria-expanded={menuOpen}
               aria-controls="mobile-nav"
               onClick={() => setMenuOpen((open) => !open)}
@@ -296,7 +487,7 @@ export function Portfolio({
           <nav
             id="mobile-nav"
             aria-label="Sections"
-            className="border-t border-zinc-200 bg-[#f5f5f7] px-6 py-3 shadow-lg md:hidden dark:border-zinc-800 dark:bg-[#0b0c10]"
+            className="border-t border-zinc-200 bg-[#f5f5f7] px-6 py-3 shadow-lg lg:hidden dark:border-zinc-800 dark:bg-[#0b0c10]"
           >
             <StatusPill className="my-2 flex w-fit" />
             <div className="flex items-center justify-between py-2">
@@ -343,9 +534,11 @@ export function Portfolio({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
-          <div className="accent-chip mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-xs font-medium tracking-wide">
-            <Sparkles className="h-3.5 w-3.5" />
-            {profile.role} · {profile.company}
+          <div className="accent-chip mb-8 flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-center font-mono text-xs font-medium tracking-wide">
+            <CompanyLogo logo={currentEmployer.logo} size="xs" />
+            <span>
+              {profile.role} · {profile.company}
+            </span>
           </div>
           <h1 className="mb-8 max-w-4xl text-4xl leading-[1.08] font-bold tracking-tight text-zinc-900 sm:text-6xl md:text-7xl dark:text-zinc-100">
             Enterprise systems,{" "}
@@ -498,8 +691,9 @@ export function Portfolio({
                   variants={rise}
                   onMouseMove={trackSpotlight}
                   onClick={() => setSelected(project)}
-                  className={`spotlight ${cardClass} group flex cursor-pointer flex-col justify-between rounded-3xl p-7 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-[var(--accent-line)] hover:shadow-xl`}
+                  className="group block h-full cursor-pointer rounded-3xl text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-line)]"
                 >
+                  <span className={`${liftCardClass} flex flex-col justify-between p-7`}>
                   <span>
                     <span className="mb-6 flex items-center justify-between">
                       <span className={`rounded-2xl p-3 ${pillClass}`}>
@@ -542,6 +736,7 @@ export function Portfolio({
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
                   </span>
+                  </span>
                 </motion.button>
               );
             })}
@@ -558,7 +753,7 @@ export function Portfolio({
             </p>
           </div>
           <motion.div
-            className="grid grid-cols-1 gap-6 md:grid-cols-2"
+            className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
             {...entrance}
             variants={stagger}
           >
@@ -568,8 +763,10 @@ export function Portfolio({
                 <motion.div
                   key={group.title}
                   variants={rise}
-                  className={`${cardClass} rounded-3xl p-8`}
+                  onMouseMove={trackSpotlight}
+                  className="group h-full rounded-3xl"
                 >
+                  <div className={`${liftCardClass} p-8`}>
                   <div className="mb-6 flex items-center gap-3">
                     <span className={`rounded-xl p-2.5 ${pillClass}`}>
                       <Icon className={`h-5 w-5 ${accentClass}`} />
@@ -578,14 +775,23 @@ export function Portfolio({
                   </div>
                   <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {group.items.map((skill) => (
-                      <li key={skill} className="flex items-center gap-2">
-                        <CheckCircle2 className={`h-4 w-4 shrink-0 ${accentClass}`} />
-                        <span className={`text-xs font-medium ${bodyClass}`}>
-                          {skill}
-                        </span>
+                      <li key={skill}>
+                        <a
+                          href={skillLinks[skill]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex origin-left cursor-pointer items-center gap-2.5 rounded-md text-xs font-medium transition-[color,scale] duration-200 hover:scale-105 hover:text-[var(--accent-text)] focus-visible:text-[var(--accent-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-line)] motion-reduce:hover:scale-100 ${bodyClass}`}
+                        >
+                          <TechIcon name={skill} />
+                          <span>
+                            {skill}
+                            <span className="sr-only"> (opens in a new tab)</span>
+                          </span>
+                        </a>
                       </li>
                     ))}
                   </ul>
+                  </div>
                 </motion.div>
               );
             })}
@@ -620,7 +826,8 @@ export function Portfolio({
                   <span className={`text-xs ${mutedClass}`}>Since August 2019</span>
                 </div>
                 <div className={`${cardClass} rounded-2xl p-4`}>
-                  <span className="block font-mono text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  <span className="flex items-center gap-2 font-mono text-lg font-bold leading-snug text-purple-600 dark:text-purple-400">
+                    <CompanyLogo logo={currentEmployer.logo} size="sm" />
                     {profile.company}
                   </span>
                   <span className={`text-xs ${mutedClass}`}>Current employer</span>
@@ -637,10 +844,11 @@ export function Portfolio({
                     <dt className={mutedClass}>Location</dt>
                     <dd className={`font-semibold ${headingClass}`}>{profile.location}</dd>
                   </div>
-                  <div className={`flex items-center justify-between border-b pb-2 ${sectionRule}`}>
+                  <div className={`flex flex-col gap-2 border-b pb-2 ${sectionRule}`}>
                     <dt className={mutedClass}>Employer</dt>
-                    <dd className="font-semibold text-emerald-700 dark:text-emerald-400">
-                      {profile.company}
+                    <dd className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
+                      <CompanyLogo logo={currentEmployer.logo} size="xs" />
+                      <span>{profile.company}</span>
                     </dd>
                   </div>
                   <div className={`flex items-center justify-between border-b pb-2 ${sectionRule}`}>
@@ -681,20 +889,32 @@ export function Portfolio({
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <a
+            <ContactAction
+              label="Email"
+              value={profile.email}
+              copyLabel="Copy Email Address"
+              openLabel="Open Mail App"
               href={`mailto:${profile.email}`}
-              title="Email"
-              className="accent-fill rounded-full border border-transparent p-3"
-            >
-              <Mail className="h-5 w-5" />
-            </a>
-            <a
+              toastMessage="Copied email to clipboard!"
+              icon={Mail}
+              buttonClassName="accent-fill rounded-full border border-transparent p-3"
+              open={activeContact === "email"}
+              onOpenChange={(open) => setActiveContact(open ? "email" : null)}
+              onCopied={showToast}
+            />
+            <ContactAction
+              label="Phone"
+              value={profile.phone}
+              copyLabel="Copy Phone Number"
+              openLabel="Call / Open Phone App"
               href={profile.phoneHref}
-              title="Phone"
-              className="rounded-full border border-zinc-200 bg-white p-3 text-zinc-900 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-            >
-              <Phone className="h-5 w-5" />
-            </a>
+              toastMessage="Copied phone to clipboard!"
+              icon={Phone}
+              buttonClassName="rounded-full border border-zinc-200 bg-white p-3 text-zinc-900 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+              open={activeContact === "phone"}
+              onOpenChange={(open) => setActiveContact(open ? "phone" : null)}
+              onCopied={showToast}
+            />
             <a
               href={profile.github}
               target="_blank"
@@ -717,7 +937,7 @@ export function Portfolio({
         </motion.div>
         <div className={`mx-auto mt-12 flex max-w-6xl flex-col items-center justify-between gap-2 border-t pt-8 text-[11px] sm:flex-row ${mutedClass} ${sectionRule}`}>
           <p>© 2026 {profile.name}</p>
-          <p className="font-mono">Next.js on Google Cloud Run</p>
+          <p className="font-mono"></p>
         </div>
       </footer>
 
@@ -736,6 +956,14 @@ export function Portfolio({
         onClose={() => setPaletteOpen(false)}
         onToggleTheme={toggleTheme}
       />
+      {toast ? (
+        <div
+          role="status"
+          className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-xl backdrop-blur-md dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-100"
+        >
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }
