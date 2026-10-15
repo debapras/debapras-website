@@ -23,6 +23,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { FaAws } from "react-icons/fa";
 import { applyAccent, accents, isAccentId, type AccentId } from "@/lib/accent";
 import { CommandPalette } from "@/components/command-palette";
 import { CompanyLogo } from "@/components/company-logo";
@@ -816,7 +817,7 @@ export function Portfolio({
               </p>
               <p className={`mb-8 text-sm leading-relaxed md:text-base ${secondaryClass}`}>
                 Outside Amdocs, the personal work is Rootlink, DebaAI, and a
-                Cloud SQL sync pipeline. Certification: {profile.certification}.
+                Cloud SQL sync pipeline.
               </p>
               <div className="flex flex-wrap gap-4">
                 <div className={`${cardClass} rounded-2xl p-4`}>
@@ -832,6 +833,25 @@ export function Portfolio({
                   </span>
                   <span className={`text-xs ${mutedClass}`}>Current employer</span>
                 </div>
+                <a
+                  href={profile.certification.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${cardClass} flex items-center gap-3 rounded-2xl p-4 transition-colors hover:border-[var(--accent-line)]`}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#232F3E]">
+                    <FaAws className="h-6 w-6 text-[#FF9900]" aria-hidden />
+                  </span>
+                  <span>
+                    <span className={`block text-sm font-semibold ${headingClass}`}>
+                      {profile.certification.name}
+                    </span>
+                    <span className={`text-xs ${mutedClass}`}>
+                      {profile.certification.issuer}
+                      <span className="sr-only"> (opens in a new tab)</span>
+                    </span>
+                  </span>
+                </a>
               </div>
             </div>
             <div className="md:col-span-5">
@@ -855,6 +875,23 @@ export function Portfolio({
                     <dt className={mutedClass}>Primary stack</dt>
                     <dd className="font-semibold text-blue-600 dark:text-blue-400">
                       Java & Spring Boot
+                    </dd>
+                  </div>
+                  <div className={`flex flex-col gap-2 border-b pb-2 ${sectionRule}`}>
+                    <dt className={mutedClass}>Certification</dt>
+                    <dd>
+                      <a
+                        href={profile.certification.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 font-semibold text-[#C45500] hover:underline dark:text-[#FF9900]"
+                      >
+                        <FaAws className="h-4 w-4 shrink-0" aria-hidden />
+                        <span>
+                          {profile.certification.name}
+                          <span className="sr-only"> (opens in a new tab)</span>
+                        </span>
+                      </a>
                     </dd>
                   </div>
                   <div className="flex items-center justify-between">
@@ -1313,6 +1350,24 @@ function ResumeDialog({
                 </li>
               ))}
             </ul>
+          </div>
+          <div>
+            <h3 className={`mb-2 font-mono text-xs font-bold uppercase ${accentClass}`}>
+              Certification
+            </h3>
+            <a
+              href={profile.certification.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-2 font-semibold ${headingClass}`}
+            >
+              <FaAws className="h-5 w-5 shrink-0 text-[#FF9900]" aria-hidden />
+              <span>
+                {profile.certification.name}
+                <span className={`font-normal ${secondaryClass}`}> · {profile.certification.issuer}</span>
+                <span className="sr-only"> (opens in a new tab)</span>
+              </span>
+            </a>
           </div>
         </div>
       </div>

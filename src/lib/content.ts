@@ -20,7 +20,11 @@ export const profile = {
   resumePdfHref: "/Debaprasad-Sahoo-Resume.pdf",
   location: "Pune, Maharashtra",
   company: "Amdocs Development Centre India LLP",
-  certification: "AWS Certified Cloud Practitioner",
+  certification: {
+    name: "AWS Certified Cloud Practitioner",
+    issuer: "Amazon Web Services",
+    href: "https://aws.amazon.com/certification/certified-cloud-practitioner/",
+  },
 } as const;
 
 export const navigation = [

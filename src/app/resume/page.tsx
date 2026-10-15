@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FaAws } from "react-icons/fa";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
@@ -154,7 +155,12 @@ function ResumeView({
           <h2 className="border-b border-slate-200 pb-2 font-mono text-xs tracking-[0.18em] uppercase">
             Certification
           </h2>
-          <p className="mt-4 text-sm">{profile.certification} · Amazon Web Services</p>
+          <p className="mt-4 flex items-center gap-2 text-sm">
+            <FaAws className="h-5 w-5 shrink-0 text-[#FF9900]" aria-hidden />
+            <span>
+              {profile.certification.name} · {profile.certification.issuer}
+            </span>
+          </p>
         </section>
       </article>
     </div>
